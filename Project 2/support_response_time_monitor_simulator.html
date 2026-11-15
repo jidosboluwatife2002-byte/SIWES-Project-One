@@ -1,0 +1,543 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Support Response Time Monitor — SLA Simulator</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts: Inter & JetBrains Mono -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #0b1120;
+            color: #f8fafc;
+        }
+        code, pre, .font-mono {
+            font-family: 'JetBrains Mono', monospace;
+        }
+        .glass-panel {
+            background: rgba(15, 23, 42, 0.8);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(148, 163, 184, 0.12);
+        }
+        .preset-card {
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .preset-card:hover {
+            transform: translateY(-2px);
+        }
+        /* Custom scrollbar */
+        ::-webkit-scrollbar {
+            width: 7px;
+            height: 7px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #0b1120;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #334155;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #475569;
+        }
+    </style>
+</head>
+<body class="min-h-screen pb-14 selection:bg-indigo-500 selection:text-white">
+
+    <!-- Top Navigation / Header -->
+    <header class="bg-slate-950/90 border-b border-slate-800/80 sticky top-0 z-50 backdrop-blur-md">
+        <div class="max-w-7xl mx-auto px-4 py-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row justify-between items-center gap-4">
+            <div class="flex items-center space-x-3.5">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 via-blue-600 to-cyan-500 flex items-center justify-center text-white shadow-lg shadow-indigo-500/25">
+                    <i class="fa-solid fa-stopwatch text-lg"></i>
+                </div>
+                <div>
+                    <h1 class="text-lg sm:text-xl font-bold text-white tracking-tight">Support Response Time Monitor</h1>
+                    <p class="text-xs text-slate-400">Live SLA & Escalation Workflow Simulator</p>
+                </div>
+            </div>
+
+            <div class="flex items-center space-x-3">
+                <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                    <span class="w-2 h-2 rounded-full bg-emerald-400 mr-2 animate-pulse"></span> Production Webhook Active
+                </span>
+            </div>
+        </div>
+    </header>
+
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-6 space-y-6">
+
+        <!-- Evaluator Scenario Presets Banner -->
+        <section class="glass-panel rounded-2xl p-5 shadow-xl">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-4">
+                <div>
+                    <h2 class="text-xs font-bold uppercase tracking-wider text-indigo-400 flex items-center gap-2">
+                        <i class="fa-solid fa-wand-magic-sparkles"></i> Quick Test Scenarios (Click to Load Preset)
+                    </h2>
+                    <p class="text-xs text-slate-400 mt-0.5">Select a test case to automatically configure priority, ticket details, and timestamp overrides.</p>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-3.5">
+                <!-- Preset 1: Urgent Business Hours -->
+                <button type="button" onclick="applyPreset('urgent_bh')" id="btn-preset-urgent_bh"
+                        class="preset-card text-left p-4 rounded-xl bg-slate-900/90 border border-rose-500/30 hover:border-rose-400/70 focus:outline-none">
+                    <div class="flex items-center justify-between mb-1.5">
+                        <span class="text-xs font-bold text-rose-400 uppercase tracking-wide">Urgent — Business Hours</span>
+                        <span class="text-[11px] px-2 py-0.5 rounded bg-rose-500/15 text-rose-300 font-mono">1h SLA</span>
+                    </div>
+                    <p class="text-xs text-slate-300 leading-relaxed">
+                        Simulates a critical outage during weekday hours (Tue 10:30 AM). Triggers <strong>48m (80%) warning</strong> &amp; <strong>1h breach timer</strong>.
+                    </p>
+                </button>
+
+                <!-- Preset 2: Normal Business Hours -->
+                <button type="button" onclick="applyPreset('normal_bh')" id="btn-preset-normal_bh"
+                        class="preset-card text-left p-4 rounded-xl bg-slate-900/90 border border-sky-500/30 hover:border-sky-400/70 focus:outline-none">
+                    <div class="flex items-center justify-between mb-1.5">
+                        <span class="text-xs font-bold text-sky-400 uppercase tracking-wide">Normal — Business Hours</span>
+                        <span class="text-[11px] px-2 py-0.5 rounded bg-sky-500/15 text-sky-300 font-mono">24h SLA</span>
+                    </div>
+                    <p class="text-xs text-slate-300 leading-relaxed">
+                        Simulates a standard support question during business hours (Wed 2:15 PM). Schedules <strong>19.2h (80%) warning</strong> &amp; <strong>24h deadline</strong>.
+                    </p>
+                </button>
+
+                <!-- Preset 3: After Hours / Weekend -->
+                <button type="button" onclick="applyPreset('after_hours')" id="btn-preset-after_hours"
+                        class="preset-card text-left p-4 rounded-xl bg-slate-900/90 border border-amber-500/30 hover:border-amber-400/70 focus:outline-none">
+                    <div class="flex items-center justify-between mb-1.5">
+                        <span class="text-xs font-bold text-amber-400 uppercase tracking-wide">After-Hours / Weekend</span>
+                        <span class="text-[11px] px-2 py-0.5 rounded bg-amber-500/15 text-amber-300 font-mono">Auto-Reply</span>
+                    </div>
+                    <p class="text-xs text-slate-300 leading-relaxed">
+                        Simulates a ticket submitted on Saturday at 9:45 PM. Routes down the <strong>After-Hours = True</strong> branch for instant client auto-reply.
+                    </p>
+                </button>
+            </div>
+        </section>
+
+        <!-- Main 2-Column Workspace -->
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+
+            <!-- Left Column: Ticket Submission Form -->
+            <div class="lg:col-span-7 glass-panel rounded-2xl p-6 shadow-xl">
+                <div class="flex items-center justify-between pb-4 mb-5 border-b border-slate-800">
+                    <div class="flex items-center space-x-2.5">
+                        <span class="w-7 h-7 rounded-lg bg-indigo-500/20 text-indigo-400 flex items-center justify-center font-bold text-xs">
+                            <i class="fa-solid fa-ticket"></i>
+                        </span>
+                        <h2 class="text-base font-bold text-white">Incoming Support Ticket Details</h2>
+                    </div>
+                    <span class="text-[11px] font-mono text-slate-400 bg-slate-900 px-2.5 py-1 rounded-md border border-slate-800">POST JSON</span>
+                </div>
+
+                <form id="ticketForm" onsubmit="event.preventDefault(); submitTicket();" class="space-y-4">
+                    <!-- Production Webhook Endpoint -->
+                    <div>
+                        <label for="webhookUrl" class="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5">
+                            n8n Production Webhook URL
+                        </label>
+                        <div class="flex rounded-xl overflow-hidden border border-slate-700 bg-slate-900/90 focus-within:border-indigo-500 transition">
+                            <span class="px-3 py-2.5 bg-slate-800/80 text-xs font-mono text-emerald-400 border-r border-slate-700 flex items-center">
+                                POST
+                            </span>
+                            <input type="url" id="webhookUrl" required
+                                   value="https://lightbearer.app.n8n.cloud/webhook/77f41292-9791-47e0-84da-92f1471b15ec"
+                                   class="w-full bg-transparent px-3 py-2 text-xs font-mono text-slate-200 focus:outline-none">
+                        </div>
+                    </div>
+
+                    <!-- Customer Name & Email -->
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                            <label for="customerName" class="block text-xs font-medium text-slate-300 mb-1.5">Customer Name</label>
+                            <input type="text" id="customerName" required value="Amara Okafor" oninput="updatePayloadPreview()"
+                                   class="w-full bg-slate-900/90 border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-indigo-500 transition">
+                        </div>
+                        <div>
+                            <label for="customerEmail" class="block text-xs font-medium text-slate-300 mb-1.5">Customer Email</label>
+                            <input type="email" id="customerEmail" required value="amara.okafor@clientcorp.com" oninput="updatePayloadPreview()"
+                                   class="w-full bg-slate-900/90 border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-indigo-500 transition">
+                        </div>
+                    </div>
+
+                    <!-- Priority & Status -->
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-xs font-medium text-slate-300 mb-1.5">Priority Level (SLA Tier)</label>
+                            <div class="grid grid-cols-2 gap-2.5">
+                                <button type="button" id="prioUrgentBtn" onclick="setPriority('Urgent')"
+                                        class="py-2.5 px-3 rounded-xl border text-xs font-bold flex items-center justify-center gap-1.5 transition bg-rose-500/20 border-rose-500 text-rose-300">
+                                    <i class="fa-solid fa-fire"></i> Urgent (1h)
+                                </button>
+                                <button type="button" id="prioNormalBtn" onclick="setPriority('Normal')"
+                                        class="py-2.5 px-3 rounded-xl border text-xs font-bold flex items-center justify-center gap-1.5 transition bg-slate-900/90 border-slate-700 text-slate-400 hover:text-slate-200">
+                                    <i class="fa-solid fa-clock"></i> Normal (24h)
+                                </button>
+                            </div>
+                            <input type="hidden" id="priorityValue" value="Urgent">
+                        </div>
+
+                        <div>
+                            <label for="ticketStatus" class="block text-xs font-medium text-slate-300 mb-1.5">Initial Ticket Status</label>
+                            <select id="ticketStatus" onchange="updatePayloadPreview()"
+                                    class="w-full bg-slate-900/90 border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-indigo-500 transition">
+                                <option value="Open" selected>Open (Unresolved)</option>
+                                <option value="Resolved">Resolved</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Timestamp / Time Override -->
+                    <div class="bg-slate-900/60 p-4 rounded-xl border border-slate-800 space-y-3">
+                        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                            <label for="timestampPreset" class="text-xs font-semibold text-slate-300 flex items-center gap-1.5">
+                                <i class="fa-regular fa-calendar-check text-indigo-400"></i> Timestamp / Business Hours Override
+                            </label>
+                            <select id="timestampPreset" onchange="handleTimestampSelect()"
+                                    class="bg-slate-950 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-indigo-500">
+                                <option value="business_hours" selected>Simulated Business Hours (Tue 10:30 AM)</option>
+                                <option value="after_hours">Simulated After-Hours / Weekend (Sat 9:45 PM)</option>
+                                <option value="live_now">Live Current System Time (Now)</option>
+                            </select>
+                        </div>
+
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 items-center">
+                            <div>
+                                <span class="block text-[11px] text-slate-400 mb-1">ISO Timestamp Sent in Payload</span>
+                                <input type="text" id="customTimestamp" oninput="updatePayloadPreview()"
+                                       class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-1.5 text-xs font-mono text-cyan-300 focus:outline-none focus:border-indigo-500">
+                            </div>
+                            <div class="text-[11px] text-slate-400 bg-slate-950/70 p-2.5 rounded-lg border border-slate-800/80">
+                                <span class="text-slate-300 font-semibold block mb-0.5">Expected n8n Route:</span>
+                                <span id="expectedRouteHint" class="text-emerald-400">Business Hours &rarr; Starts 1h Urgent SLA &amp; 80% Warning Timers</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Ticket Subject -->
+                    <div>
+                        <label for="ticketSubject" class="block text-xs font-medium text-slate-300 mb-1.5">Ticket Subject</label>
+                        <input type="text" id="ticketSubject" required value="Production API Gateway Returning 502 Errors" oninput="updatePayloadPreview()"
+                               class="w-full bg-slate-900/90 border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-indigo-500 transition">
+                    </div>
+
+                    <!-- Description / Message -->
+                    <div>
+                        <label for="ticketDescription" class="block text-xs font-medium text-slate-300 mb-1.5">Description / Message</label>
+                        <textarea id="ticketDescription" rows="3" required oninput="updatePayloadPreview()"
+                                  class="w-full bg-slate-900/90 border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-indigo-500 transition">Our checkout microservice started failing with 502 Bad Gateway responses 10 minutes ago. Please investigate immediately.</textarea>
+                    </div>
+
+                    <!-- Submit Button -->
+                    <div class="pt-2">
+                        <button type="submit" id="submitBtn"
+                                class="w-full bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-indigo-500 hover:to-blue-500 text-white font-semibold py-3.5 px-5 rounded-xl shadow-lg shadow-indigo-600/25 transition flex items-center justify-center space-x-2">
+                            <i class="fa-solid fa-paper-plane"></i>
+                            <span>Dispatch Support Ticket to n8n</span>
+                        </button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Right Column: Live JSON Payload Preview & Response Console -->
+            <div class="lg:col-span-5 flex flex-col space-y-6">
+
+                <!-- Live JSON Payload Preview -->
+                <div class="glass-panel rounded-2xl p-6 shadow-xl">
+                    <div class="flex items-center justify-between pb-3 mb-3 border-b border-slate-800">
+                        <div class="flex items-center space-x-2">
+                            <i class="fa-solid fa-code text-cyan-400 text-sm"></i>
+                            <h3 class="text-sm font-bold text-white">Live JSON Payload Preview</h3>
+                        </div>
+                        <button type="button" onclick="copyPayload()" id="copyBtn"
+                                class="text-xs bg-slate-800 hover:bg-slate-700 text-slate-300 px-2.5 py-1 rounded-lg border border-slate-700 transition">
+                            <i class="fa-regular fa-copy mr-1"></i> Copy JSON
+                        </button>
+                    </div>
+                    <p class="text-xs text-slate-400 mb-3">Exact JSON body transmitted to your <code class="text-slate-300">Incoming Tickets</code> webhook:</p>
+                    <pre id="jsonPreview" class="bg-slate-950 border border-slate-800/90 rounded-xl p-4 text-xs font-mono text-emerald-300 overflow-x-auto leading-relaxed"></pre>
+                </div>
+
+                <!-- Status & Response Feedback -->
+                <div class="glass-panel rounded-2xl p-6 shadow-xl flex-1 flex flex-col">
+                    <div class="flex items-center justify-between pb-3 mb-3 border-b border-slate-800">
+                        <div class="flex items-center space-x-2">
+                            <i class="fa-solid fa-terminal text-indigo-400 text-sm"></i>
+                            <h3 class="text-sm font-bold text-white">Webhook Status &amp; Execution Log</h3>
+                        </div>
+                        <button type="button" onclick="clearLogs()" class="text-xs text-slate-400 hover:text-white transition">
+                            Clear
+                        </button>
+                    </div>
+
+                    <!-- Highlighted Latest Response Card -->
+                    <div id="latestStatusCard" class="mb-4 p-3.5 rounded-xl bg-slate-900/90 border border-slate-800 text-xs">
+                        <div class="flex items-center justify-between mb-1">
+                            <span class="font-semibold text-slate-400">Last Dispatch Status:</span>
+                            <span id="statusBadge" class="px-2 py-0.5 rounded bg-slate-800 text-slate-400 font-mono text-[11px]">Ready</span>
+                        </div>
+                        <p id="statusMessage" class="text-slate-300 leading-relaxed mt-1">
+                            Configure your ticket parameters on the left and click <strong>Dispatch Support Ticket to n8n</strong> to trigger your workflow.
+                        </p>
+                    </div>
+
+                    <!-- Scrollable Audit Trail -->
+                    <div id="auditLog" class="bg-slate-950 border border-slate-800/90 rounded-xl p-3.5 font-mono text-[11px] space-y-2.5 flex-1 min-h-[180px] max-h-[280px] overflow-y-auto">
+                        <div class="text-slate-500 italic">[System Ready] Connected to production endpoint.</div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </main>
+
+    <script>
+        // Simulated reference timestamps
+        const SIMULATED_BUSINESS_HOURS_ISO = "2026-11-17T10:30:00.000Z"; // Tuesday 10:30 AM
+        const SIMULATED_AFTER_HOURS_ISO    = "2026-11-14T21:45:00.000Z"; // Saturday 9:45 PM
+
+        // Initialize defaults on load
+        window.addEventListener('DOMContentLoaded', () => {
+            document.getElementById('customTimestamp').value = SIMULATED_BUSINESS_HOURS_ISO;
+            updatePayloadPreview();
+        });
+
+        // Priority button toggle handler
+        function setPriority(level) {
+            document.getElementById('priorityValue').value = level;
+            const urgentBtn = document.getElementById('prioUrgentBtn');
+            const normalBtn = document.getElementById('prioNormalBtn');
+
+            if (level === 'Urgent') {
+                urgentBtn.className = "py-2.5 px-3 rounded-xl border text-xs font-bold flex items-center justify-center gap-1.5 transition bg-rose-500/20 border-rose-500 text-rose-300";
+                normalBtn.className = "py-2.5 px-3 rounded-xl border text-xs font-bold flex items-center justify-center gap-1.5 transition bg-slate-900/90 border-slate-700 text-slate-400 hover:text-slate-200";
+            } else {
+                normalBtn.className = "py-2.5 px-3 rounded-xl border text-xs font-bold flex items-center justify-center gap-1.5 transition bg-sky-500/20 border-sky-500 text-sky-300";
+                urgentBtn.className = "py-2.5 px-3 rounded-xl border text-xs font-bold flex items-center justify-center gap-1.5 transition bg-slate-900/90 border-slate-700 text-slate-400 hover:text-slate-200";
+            }
+            updateRouteHint();
+            updatePayloadPreview();
+        }
+
+        // Timestamp dropdown change handler
+        function handleTimestampSelect() {
+            const mode = document.getElementById('timestampPreset').value;
+            const tsInput = document.getElementById('customTimestamp');
+
+            if (mode === 'business_hours') {
+                tsInput.value = SIMULATED_BUSINESS_HOURS_ISO;
+            } else if (mode === 'after_hours') {
+                tsInput.value = SIMULATED_AFTER_HOURS_ISO;
+            } else {
+                tsInput.value = new Date().toISOString();
+            }
+            updateRouteHint();
+            updatePayloadPreview();
+        }
+
+        // Update expected workflow path indicator
+        function updateRouteHint() {
+            const mode = document.getElementById('timestampPreset').value;
+            const priority = document.getElementById('priorityValue').value;
+            const hintEl = document.getElementById('expectedRouteHint');
+
+            if (mode === 'after_hours') {
+                hintEl.className = "text-amber-400";
+                hintEl.innerHTML = "After-Hours (True) &rarr; Sends Immediate After-Hours Auto-Reply";
+            } else if (priority === 'Urgent') {
+                hintEl.className = "text-rose-400";
+                hintEl.innerHTML = "Business Hours &rarr; 1h Urgent SLA (48m Warning &rarr; 60m Breach Alert)";
+            } else {
+                hintEl.className = "text-sky-400";
+                hintEl.innerHTML = "Business Hours &rarr; 24h Normal SLA (19.2h Warning &rarr; 24h Breach Alert)";
+            }
+        }
+
+        // Apply one-click scenario presets
+        function applyPreset(presetKey) {
+            const ticketSuffix = Math.floor(1000 + Math.random() * 9000);
+
+            if (presetKey === 'urgent_bh') {
+                document.getElementById('customerName').value = "Amara Okafor";
+                document.getElementById('customerEmail').value = "amara.okafor@clientcorp.com";
+                setPriority('Urgent');
+                document.getElementById('ticketStatus').value = "Open";
+                document.getElementById('timestampPreset').value = "business_hours";
+                document.getElementById('customTimestamp').value = SIMULATED_BUSINESS_HOURS_ISO;
+                document.getElementById('ticketSubject').value = `[TKT-${ticketSuffix}] Production API Gateway Returning 502 Errors`;
+                document.getElementById('ticketDescription').value = "Our checkout microservice started failing with 502 Bad Gateway responses 10 minutes ago. Please investigate immediately.";
+                appendLog("Loaded Preset: Urgent Ticket during Business Hours (1h SLA).", "info");
+            } else if (presetKey === 'normal_bh') {
+                document.getElementById('customerName').value = "David Mensah";
+                document.getElementById('customerEmail').value = "d.mensah@retailhub.io";
+                setPriority('Normal');
+                document.getElementById('ticketStatus').value = "Open";
+                document.getElementById('timestampPreset').value = "business_hours";
+                document.getElementById('customTimestamp').value = "2026-11-18T14:15:00.000Z";
+                document.getElementById('ticketSubject').value = `[TKT-${ticketSuffix}] Request for Q4 Invoice PDF & Tax Breakdown`;
+                document.getElementById('ticketDescription').value = "Hello support team, could you please send an itemized PDF copy of our November subscription invoice for our accounting records?";
+                appendLog("Loaded Preset: Normal Ticket during Business Hours (24h SLA).", "info");
+            } else if (presetKey === 'after_hours') {
+                document.getElementById('customerName').value = "Chidinma Eze";
+                document.getElementById('customerEmail').value = "chidinma@fintechlabs.ng";
+                setPriority('Urgent');
+                document.getElementById('ticketStatus').value = "Open";
+                document.getElementById('timestampPreset').value = "after_hours";
+                document.getElementById('customTimestamp').value = SIMULATED_AFTER_HOURS_ISO;
+                document.getElementById('ticketSubject').value = `[TKT-${ticketSuffix}] Weekend Webhook Sync Delay`;
+                document.getElementById('ticketDescription').value = "Hi team, noticing delayed event delivery this Saturday night. Logging this so it is queued for review.";
+                appendLog("Loaded Preset: After-Hours / Weekend Ticket (Auto-Reply Branch).", "warning");
+            }
+
+            updateRouteHint();
+            updatePayloadPreview();
+        }
+
+        // Build current JSON payload object
+        function buildPayload() {
+            const mode = document.getElementById('timestampPreset').value;
+            const priority = document.getElementById('priorityValue').value;
+            const timestamp = document.getElementById('customTimestamp').value.trim() || new Date().toISOString();
+
+            return {
+                ticket_id: "TKT-" + Date.now().toString().slice(-6),
+                customer_name: document.getElementById('customerName').value.trim(),
+                customer_email: document.getElementById('customerEmail').value.trim(),
+                subject: document.getElementById('ticketSubject').value.trim(),
+                description: document.getElementById('ticketDescription').value.trim(),
+                priority: priority,
+                status: document.getElementById('ticketStatus').value,
+                sla_hours: priority === 'Urgent' ? 1 : 24,
+                submitted_at: timestamp,
+                timestamp: timestamp,
+                is_after_hours_override: mode === 'after_hours'
+            };
+        }
+
+        // Refresh live JSON preview box
+        function updatePayloadPreview() {
+            const payload = buildPayload();
+            document.getElementById('jsonPreview').textContent = JSON.stringify(payload, null, 2);
+        }
+
+        // Copy JSON payload using execCommand fallback for iframe compatibility
+        function copyPayload() {
+            const text = document.getElementById('jsonPreview').textContent;
+            const tempArea = document.createElement('textarea');
+            tempArea.value = text;
+            document.body.appendChild(tempArea);
+            tempArea.select();
+            try {
+                document.execCommand('copy');
+                const btn = document.getElementById('copyBtn');
+                btn.innerHTML = '<i class="fa-solid fa-check text-emerald-400 mr-1"></i> Copied!';
+                setTimeout(() => {
+                    btn.innerHTML = '<i class="fa-regular fa-copy mr-1"></i> Copy JSON';
+                }, 1800);
+            } catch (e) {
+                appendLog("Unable to copy JSON automatically.", "error");
+            }
+            document.body.removeChild(tempArea);
+        }
+
+        // Append line to audit console
+        function appendLog(msg, level = "info") {
+            const logBox = document.getElementById('auditLog');
+            const time = new Date().toTimeString().split(' ')[0];
+            const colors = {
+                info: "text-indigo-400",
+                success: "text-emerald-400",
+                warning: "text-amber-400",
+                error: "text-rose-400"
+            };
+
+            const entry = document.createElement('div');
+            entry.className = "border-b border-slate-900 pb-1.5 leading-relaxed";
+            entry.innerHTML = `<span class="text-slate-600">[${time}]</span> <span class="${colors[level] || colors.info} font-semibold">[${level.toUpperCase()}]</span> <span class="text-slate-300 break-words">${msg}</span>`;
+            logBox.appendChild(entry);
+            logBox.scrollTop = logBox.scrollHeight;
+        }
+
+        function clearLogs() {
+            document.getElementById('auditLog').innerHTML = '<div class="text-slate-500 italic">[Logs Cleared] Ready for next SLA test run.</div>';
+        }
+
+        // Submit ticket payload to n8n production webhook with CORS-safe fallback
+        async function submitTicket() {
+            const url = document.getElementById('webhookUrl').value.trim();
+            const submitBtn = document.getElementById('submitBtn');
+            const statusBadge = document.getElementById('statusBadge');
+            const statusMessage = document.getElementById('statusMessage');
+
+            if (!url) {
+                appendLog("Webhook URL is required.", "error");
+                return;
+            }
+
+            const payload = buildPayload();
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> <span>Sending to n8n...</span>';
+            statusBadge.className = "px-2 py-0.5 rounded bg-indigo-500/20 text-indigo-300 font-mono text-[11px]";
+            statusBadge.textContent = "Dispatching...";
+
+            appendLog(`Sending POST request (${payload.priority} | ${payload.submitted_at}) to webhook...`, "info");
+
+            try {
+                const response = await fetch(url, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(payload)
+                });
+
+                const responseText = await response.text();
+
+                if (response.ok) {
+                    statusBadge.className = "px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 font-mono text-[11px]";
+                    statusBadge.textContent = `HTTP ${response.status} OK`;
+                    statusMessage.innerHTML = `Ticket <strong class="text-white">${payload.ticket_id}</strong> (${payload.priority}) accepted by n8n. Response: <code class="text-emerald-300">${responseText || '{"message":"Workflow was started"}'}</code>`;
+                    appendLog(`Success (HTTP ${response.status}): ${responseText || 'Workflow triggered cleanly.'}`, "success");
+                } else {
+                    statusBadge.className = "px-2 py-0.5 rounded bg-rose-500/20 text-rose-300 font-mono text-[11px]";
+                    statusBadge.textContent = `HTTP ${response.status}`;
+                    statusMessage.innerHTML = `n8n returned status <strong class="text-rose-300">${response.status}</strong>: ${responseText || response.statusText}`;
+                    appendLog(`Webhook error HTTP ${response.status}: ${responseText || response.statusText}`, "error");
+                }
+            } catch (err) {
+                // CORS-safe fallback when browser blocks reading cross-origin headers from n8n cloud
+                try {
+                    await fetch(url, {
+                        method: 'POST',
+                        mode: 'no-cors',
+                        headers: {
+                            'Content-Type': 'text/plain;charset=UTF-8'
+                        },
+                        body: JSON.stringify(payload)
+                    });
+
+                    statusBadge.className = "px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 font-mono text-[11px]";
+                    statusBadge.textContent = "Dispatched (CORS-Safe)";
+                    statusMessage.innerHTML = `Ticket <strong class="text-white">${payload.ticket_id}</strong> dispatched via CORS-safe fallback. Check your n8n <strong>Executions</strong> tab to inspect the SLA timers and email nodes.`;
+                    appendLog(`Dispatched via CORS-safe fallback for ${payload.customer_email}. Verify run in n8n Executions.`, "warning");
+                } catch (fallbackErr) {
+                    statusBadge.className = "px-2 py-0.5 rounded bg-rose-500/20 text-rose-300 font-mono text-[11px]";
+                    statusBadge.textContent = "Network Error";
+                    statusMessage.textContent = `Failed to reach webhook: ${fallbackErr.message}`;
+                    appendLog(`Network Error: ${fallbackErr.message}`, "error");
+                }
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = '<i class="fa-solid fa-paper-plane"></i> <span>Dispatch Support Ticket to n8n</span>';
+            }
+        }
+    </script>
+</body>
+</html>
